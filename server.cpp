@@ -3,9 +3,22 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <cstdio>
+#include <string>
+#include <ctime>
 
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"
+
+std::string getTimeStringOfNow()
+{
+	struct tm fuckMSVC{};
+	time_t now;
+	time(&now);
+	localtime_s(&fuckMSVC, &now);
+	char text[100];
+	strftime(text, sizeof text, "%F %T", &fuckMSVC);
+	return { text };
+}
 
 int main()
 {
@@ -89,6 +102,22 @@ int main()
 			WSACleanup();
 			return 1;
 		}
+
+		const std::string& now = getTimeStringOfNow();
+		iSendResult = send(
+			ClientSocket,
+			now.c_str(),
+			static_cast<int>(now.size()),
+			0
+		);
+		if (iSendResult == SOCKET_ERROR)
+		{
+			printf("send failed with error: %d\n", WSAGetLastError());
+			closesocket(ClientSocket);
+			WSACleanup();
+			return 1;
+		}
+
 		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0)
 		{
