@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <strsafe.h>
+#include <string>
+#include <ctime>
 
 #define WS_VER 0x0202
 #define DEFAULT_PORT "5001"
@@ -409,6 +411,17 @@ int __cdecl main(int argc, char** argv)
 	}
 }
 
+std::string getTimeStringOfNow()
+{
+	struct tm fuckMSVC{};
+	time_t now;
+	time(&now);
+	localtime_s(&fuckMSVC, &now);
+	char text[100];
+	strftime(text, sizeof text, "%F %T", &fuckMSVC);
+	return { text };
+}
+
 /*
  * This is the main function that handles all the events occuring on the
  * different handles we are watching.
@@ -569,7 +582,11 @@ void HandleEvent(int index, WSAEVENT* Handles, Socklist* socklist)
 	{ // WSARecv() was queued
 
 		printf("Read buffer [%s]\n", socklist[index].Buffer);
-		printf("Echoing back to client\n");
+
+		auto time = getTimeStringOfNow() + "\n";
+		strcpy_s(socklist[index].DataBuf.buf, 128, time.c_str());
+		socklist[index].DataBuf.len = time.size();
+		bytes = time.size();
 
 		if (SOCKET_ERROR == WSASend(socklist[index].sock,
 			&(socklist[index].DataBuf),
